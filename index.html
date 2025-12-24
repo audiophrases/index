@@ -1,1 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>audiophrases · Websites</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    h1 { margin-bottom: 0.25rem; }
+    p { color: #555; }
+    ul { padding-left: 1.2rem; }
+    li { margin: .6rem 0; }
+    a { text-decoration: none; color: #0366d6; }
+    a:hover { text-decoration: underline; }
+    .muted { color: #777; font-size: 0.9em; }
+  </style>
+</head>
+<body>
 
+<h1>audiophrases · websites</h1>
+<p class="muted">
+  Automatically indexed from public GitHub repositories containing <code>index.html</code>.
+</p>
+
+<ul id="sites">
+  <li>Loading…</li>
+</ul>
+
+<script>
+  const user = "audiophrases";
+  const list = document.getElementById("sites");
+
+  function pagesUrl(repo) {
+    return `https://${user}.github.io/${repo}/`;
+  }
+
+  async function hasIndexHtml(repo) {
+    const url = `https://api.github.com/repos/${user}/${repo}/contents/index.html`;
+    const res = await fetch(url, {
+      headers: { "Accept": "application/vnd.github+json" }
+    });
+    return res.ok;
+  }
+
+  async function loadSites() {
+    const res = await fetch(
+      `https://api.github.com/users/${user}/repos?per_page=100&sort=updated`
+    );
+    if (!res.ok) {
+      list.innerHTML = "<li>Error loading repositories.</li>";
+      return;
+    }
+
+    const repos = await res.json();
+    list.innerHTML = "";
+
+    let count = 0;
+
+    for (const repo of repos) {
+      if (repo.fork) continue;
+
+      try {
+        if (await hasIndexHtml(repo.name)) {
+          const li = document.createElement("li");
+
+          const a = document.createElement("a");
+          a.href = pagesUrl(repo.name);
+          a.textContent = repo.name;
+          a.target = "_blank";
+
+          li.appendChild(a);
+
+          if (repo.description) {
+            const span = document.createElement("span");
+            span.className = "muted";
+            span.textContent = " — " + repo.description;
+            li.appendChild(span);
+          }
+
+          list.appendChild(li);
+          count++;
+        }
+      } catch {}
+    }
+
+    if (count === 0) {
+      list.innerHTML = "<li>No websites found.</li>";
+    }
+  }
+
+  loadSites();
+</script>
+
+</body>
+</html>
